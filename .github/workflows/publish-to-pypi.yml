@@ -1,6 +1,6 @@
 # PYCUI publish: a version tag is the release. The sdist is built and checked
-# first, then a wheel for every supported platform and Python is built and
-# tested, and the whole set is uploaded to PyPI in one step.
+# first, then wheels for Windows and Linux on x86_64 are built and tested, and
+# the whole set is uploaded to PyPI in one step.
 #
 #   git tag v1.4.0.0 && git push origin v1.4.0.0
 #
@@ -74,20 +74,16 @@ jobs:
     name: wheels (${{ matrix.name }})
     needs: sdist
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
-          # One job per native target: cibuildwheel builds the runner's own
-          # architecture, so nothing is cross-compiled and every wheel is
+          # Only x86_64, one runner per OS: cibuildwheel builds the runner's
+          # own architecture, so nothing is cross-compiled and each wheel is
           # tested where it was built.
           - { name: linux-x86_64, runner: ubuntu-24.04 }
-          - { name: linux-aarch64, runner: ubuntu-24.04-arm }
-          - { name: macos-arm64, runner: macos-15 }
-          - { name: macos-x86_64, runner: macos-15-intel }
           - { name: windows-amd64, runner: windows-2022 }
-          - { name: windows-arm64, runner: windows-11-arm }
     steps:
       - uses: actions/checkout@v7
         with:

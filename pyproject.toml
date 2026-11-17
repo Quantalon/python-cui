@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Software Development :: User Interfaces",
 ]
 # The library version tracks the vendored CUI release: <cui major>.<minor>.<patch>.<bindings revision>.
-version = "1.4.0.4"
+version = "1.4.0.5"
 dependencies = []
 
 [project.urls]
