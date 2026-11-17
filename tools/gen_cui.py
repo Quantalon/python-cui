@@ -12,6 +12,13 @@ Outputs : src/cui/cui_decl.pxd      every struct/enum/function Cython needs
 `python tools/gen_cui.py --check` regenerates in memory and exits non-zero when
 a checked-in file is stale; CI runs exactly that.
 
+The parse is hermetic: clang is given `-nostdinc` and the minimal standard
+headers in tools/clang-include/, so the output never depends on the host's C
+library. libclang's own wheel ships no headers, and on Linux it used to find
+none at all, which silently changed `bool`, `size_t` and `va_list` into
+error-recovery types and produced a different API. Parse errors are fatal
+instead of being printed and ignored.
+
 Mapping (see vibe/plan.md):
   * option structs (`const X *_opts`)   -> keyword-only arguments
   * out-parameters (`bool *`, `int *`)  -> extra return values
@@ -46,6 +53,19 @@ HEADER_PATHS = [
     CUI_INCLUDE / "cui" / "cui_app.h",
 ]
 ICONS_HEADER = CUI_INCLUDE / "cui" / "cui_icons.h"
+CLANG_INCLUDE = ROOT / "tools" / "clang-include"
+
+# Fixed parse environment: no host headers and a fixed target, so every
+# platform parses CUI's headers exactly the same way.
+PARSE_ARGS = [
+    "-x", "c",
+    "-std=c99",
+    "--target=x86_64-unknown-linux-gnu",
+    "-nostdinc",
+    "-isystem", str(CLANG_INCLUDE),
+    "-I", str(CUI_INCLUDE),
+    "-fparse-all-comments",
+]
 
 # Filled in from the parsed headers; cy() maps enum types to int.
 ENUM_NAMES: set[str] = set()
@@ -208,14 +228,16 @@ def parse() -> Model:
     funcs_by_name: dict[str, Func] = {}
     fnptr_typedefs: set[str] = set()
 
+    errors: list[str] = []
     for header_path in HEADER_PATHS:
-        tu = index.parse(
-            str(header_path),
-            args=["-x", "c", "-std=c99", "-I", str(CUI_INCLUDE), "-fparse-all-comments"],
-        )
+        tu = index.parse(str(header_path), args=PARSE_ARGS)
         for diag in tu.diagnostics:
-            if diag.severity >= ci.Diagnostic.Error:
-                print(f"libclang: {diag.spelling}", file=sys.stderr)
+            if diag.severity < ci.Diagnostic.Error:
+                continue
+            location = diag.location
+            where = f"{Path(location.file.name)}:{location.line}: " if location.file else ""
+            print(f"libclang: {where}{diag.spelling}", file=sys.stderr)
+            errors.append(f"{where}{diag.spelling}")
         for cursor in tu.cursor.walk_preorder():
             loc = cursor.location.file
             if loc is None:
@@ -285,6 +307,12 @@ def parse() -> Model:
     enum_names = {e.name for e in enums if e.name and re.fullmatch(r"cui_\w+", e.name)}
     ENUM_NAMES.clear()
     ENUM_NAMES.update(enum_names)
+    if errors:
+        raise SystemExit(
+            f"libclang reported {len(errors)} error(s) while parsing CUI's headers; "
+            "a partial parse would generate a different API.\n"
+            f"The minimal standard headers it needs live in {CLANG_INCLUDE.relative_to(ROOT)}."
+        )
     return Model(structs, enums, list(funcs_by_name.values()), enum_names, fnptr_typedefs)
 
 

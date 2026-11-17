@@ -167,6 +167,12 @@ python tools/gen_cui.py --check   # CI：生成物与头文件不同步就以非
 `--check` 是升级 CUI 时的安全网：头文件新增函数、改结构体布局而没重新生成，CI 会失败。
 生成物已提交到仓库，所以 `pip install` 不需要 libclang。
 
+生成器解析时固定使用 `tools/clang-include/` 里的四个最小标准头文件（`-nostdinc` +
+`-isystem`），不读宿主机的 C 库：pip 的 `libclang` 轮子不带标准头，Windows 上 libclang
+碰巧能找到 MSVC 的头，Linux 上则一个都找不到，`bool` / `size_t` / `va_list` 会被当成
+错误恢复类型，生成的 API 也就变了。如果 CUI 用到了新的标准类型，在这个目录里补上；
+解析有错误时生成器会直接失败，而不是拿残缺的 AST 继续生成。
+
 ## 测试
 
 ```sh

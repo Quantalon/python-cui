@@ -31,7 +31,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install the source tools
-        run: python -m pip install build twine libclang
+        run: python -m pip install build twine libclang==18.1.1
 
       - name: The tag, the version and the vendored CUI agree
         run: |
