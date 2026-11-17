@@ -1487,24 +1487,34 @@ cdef class App:
         return bool(ok)
 
     def run(self, frame, **desc):
-        """Create the window and call ``frame(context)`` until it closes.
+        """Create the window and call ``frame(ui)`` until it closes.
 
-        The loop runs with the GIL released, so other Python threads keep
-        running while the window waits for input.  An exception raised inside
-        ``frame`` stops the loop, unwinds cleanly and is re-raised here.
+        ``ui`` is the :class:`cui.UI` facade over the frame's
+        :class:`cui.Context`, also reachable as ``ui.context``.  The loop runs
+        with the GIL released, so other Python threads keep running while the
+        window waits for input.  An exception raised inside ``frame`` stops the
+        loop, unwinds cleanly and is re-raised here.
         """
         cdef cui_app_desc d
         cdef pycui_run_state st
         cdef Context ctx
         cdef int rc
         cdef object info = None
+        cdef object invoke
+        cdef object ui
 
         memset(&d, 0, sizeof(d))
         memset(&st, 0, sizeof(st))
         self._fill_desc(&d, dict(desc))
         ctx = Context.__new__(Context)
-        Py_INCREF(frame)
-        st.callable = <PyObject *>frame
+        # The C trampoline binds the frame's cui_ctx onto ``ctx`` and calls the
+        # frame callable with it; the callable gets the UI facade instead.
+        from .ui import UI
+
+        ui = UI(ctx)
+        invoke = lambda _context: frame(ui)
+        Py_INCREF(invoke)
+        st.callable = <PyObject *>invoke
         Py_INCREF(ctx)
         st.ui = <PyObject *>ctx
         try:

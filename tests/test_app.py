@@ -26,10 +26,10 @@ def test_run_quit_and_redraw():
     app = cui.App()
     frames = []
 
-    def frame(ctx):
-        frames.append(ctx.frame_count)
-        ctx.request_wakeup(0.01)
-        ui = cui.UI(ctx)
+    def frame(ui):
+        assert isinstance(ui, cui.UI)
+        frames.append(ui.context.frame_count)
+        ui.context.request_wakeup(0.01)
         with ui.column(pad=8):
             ui.heading("trampoline")
         if len(frames) >= 3:
@@ -42,8 +42,8 @@ def test_run_quit_and_redraw():
 def test_exception_in_frame_stops_the_loop_and_reraises():
     app = cui.App()
 
-    def frame(ctx):
-        ctx.request_wakeup(0.01)
+    def frame(ui):
+        ui.context.request_wakeup(0.01)
         raise RuntimeError("from the frame")
 
     with pytest.raises(RuntimeError, match="from the frame"):
@@ -78,8 +78,8 @@ def test_the_loop_releases_the_gil():
     thread.start()
     start = time.perf_counter()
 
-    def frame(ctx):
-        ctx.request_wakeup(0.005)
+    def frame(ui):
+        ui.context.request_wakeup(0.005)
         if time.perf_counter() - start > 0.3:
             app.quit()
 

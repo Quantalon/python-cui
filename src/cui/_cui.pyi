@@ -1,6 +1,6 @@
 """Type stubs for the hand-written Cython core."""
 
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from ._types import (
     CanvasResult,
@@ -15,6 +15,9 @@ from ._types import (
     Size,
     Vec2,
 )
+
+if TYPE_CHECKING:
+    from .ui import UI
 
 __version__: str
 CUI_VERSION: str
@@ -147,7 +150,7 @@ class App:
     def is_software(self) -> bool: ...
     def create(self, **desc: Any) -> App: ...
     def frame(self) -> bool: ...
-    def run(self, frame: Callable[[Context], None], **desc: Any) -> int: ...
+    def run(self, frame: Callable[["UI"], None], **desc: Any) -> int: ...
     def quit(self) -> None: ...
     def set_title(self, title: str) -> None: ...
     def set_size(self, width: int, height: int) -> None: ...
