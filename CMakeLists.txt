@@ -11,6 +11,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
+# CUI is a static archive linked into the shared Python extension modules, so
+# its objects must be position independent on ELF platforms (-fPIC).  Without
+# this the Linux link fails on relocations against libc symbols.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # ---- CUI, statically linked -------------------------------------------------
 
 set(CUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
