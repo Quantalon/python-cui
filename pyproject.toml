@@ -1,0 +1,68 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "cython>=3.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cui"
+description = "Python bindings for CUI, the immediate-mode native UI library written in C"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "PYCUI contributors" }]
+keywords = ["gui", "ui", "immediate-mode", "cui", "bindings", "cython"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: C",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: User Interfaces",
+]
+# The library version tracks the vendored CUI release: <cui major>.<minor>.<patch>.<bindings revision>.
+version = "1.4.0.0"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/yappologistic/CUI"
+
+[tool.scikit-build]
+minimum-version = "0.10"
+cmake.version = ">=3.24"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["src/cui"]
+wheel.exclude = ["**/*.pyx", "**/*.pxd", "**/*.h", "**/*.c"]
+wheel.py-api = ""
+sdist.include = [
+    "CMakeLists.txt",
+    "CUI/CMakeLists.txt",
+    "CUI/cmake/**",
+    "CUI/include/**",
+    "CUI/src/**",
+    "CUI/third_party/**",
+    "CUI/LICENSE",
+    "CUI/THIRD_PARTY.md",
+    "dev/**",
+    "examples/**",
+    "tests/**",
+    "tools/**",
+]
+sdist.exclude = [
+    "CUI/.git/**",
+    "CUI/.github/**",
+    "CUI/assets/**",
+    "CUI/docs/**",
+    "CUI/examples/**",
+    "CUI/tests/**",
+    "CUI/tools/**",
+    "CUI/web/**",
+    "build/**",
+    "dist/**",
+    "dev/out/**",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.scikit-build.cmake.define]
+CMAKE_BUILD_TYPE = "Release"

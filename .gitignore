@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.dylib
+build/
+dist/
+*.egg-info/
+.venv/
+build-venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local dev scratch
+dev/out/
+build/log.txt
+build/app_out.txt
+build/app_err.txt
+
+# Editors / OS
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
