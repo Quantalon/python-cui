@@ -1,4 +1,6 @@
-# PYCUI — CUI 的 Python 绑定
+# python-cui
+
+ CUI 的 Python 绑定
 
 [CUI](https://github.com/yappologistic/CUI) 是一个用 C99 写的立即模式原生 UI 库（约 190 个组件，
 自带软件渲染器与 Win32 / Cocoa / X11 / SDL2 / GLFW 窗口后端）。PYCUI 把它做成一个可以直接

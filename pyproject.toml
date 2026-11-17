@@ -18,11 +18,11 @@ classifiers = [
     "Topic :: Software Development :: User Interfaces",
 ]
 # The library version tracks the vendored CUI release: <cui major>.<minor>.<patch>.<bindings revision>.
-version = "1.4.0.6"
+version = "1.4.0.7"
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/yappologistic/CUI"
+Homepage = "https://github.com/Quantalon/python-cui"
 
 [tool.scikit-build]
 minimum-version = "0.10"
