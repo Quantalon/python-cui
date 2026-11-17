@@ -23,6 +23,20 @@ typedef struct pycui_run_state {
 /* The C frame callback handed to cui_app_run. */
 void pycui_frame_trampoline(cui_ctx *ui, void *user);
 
+/* Canvas: CUI calls this while it paints a frame.  The Python callable is kept
+ * alive by the context; it receives a (x, y, w, h) tuple and draws through the
+ * same context. */
+typedef struct pycui_canvas_state {
+    PyObject *callable;
+} pycui_canvas_state;
+
+void pycui_canvas_trampoline(cui_ctx *ui, cui_rect rect, void *user);
+
+/* The two theme fields the Python context exposes; the cui_theme layout stays
+ * private to C. */
+float pycui_theme_font_scale(cui_ctx *ui);
+void pycui_theme_set_font_scale(cui_ctx *ui, float value);
+
 /* New reference: None when nothing was raised, else (exception, traceback).
  * The state keeps no reference to the exception afterwards. */
 PyObject *pycui_run_state_take_raise_info(pycui_run_state *st);

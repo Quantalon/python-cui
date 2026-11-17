@@ -19,7 +19,22 @@ from cpython.bytes cimport PyBytes_AsString, PyBytes_AsStringAndSize, PyBytes_Fr
 from cpython.ref cimport PyObject, Py_INCREF, Py_XDECREF
 from cpython.unicode cimport PyUnicode_AsUTF8AndSize
 
-from ._types import Color, Corners, Date, KeyCombo, Rect, Size, TextResult, Vec2
+from ._types import (
+    CanvasResult,
+    ChartAnnotation,
+    Color,
+    Corners,
+    Date,
+    DotChartResult,
+    DotSeries,
+    EventTrackResult,
+    KeyCombo,
+    Rect,
+    Series,
+    Size,
+    TextResult,
+    Vec2,
+)
 from .cui_decl cimport *
 
 cdef extern from "_trampoline.h":
@@ -33,6 +48,28 @@ cdef extern from "_trampoline.h":
     void pycui_frame_trampoline(cui_ctx *ui, void *user) noexcept nogil
     object pycui_run_state_take_raise_info(pycui_run_state *st)
     void pycui_run_state_release(pycui_run_state *st)
+
+    ctypedef struct pycui_canvas_state:
+        PyObject *callable
+
+    void pycui_canvas_trampoline(cui_ctx *ui, cui_rect rect, void *user) noexcept nogil
+    float pycui_theme_font_scale(cui_ctx *ui) noexcept
+    void pycui_theme_set_font_scale(cui_ctx *ui, float value) noexcept
+
+
+# Exceptions raised by a canvas paint callback run from CUI's paint phase.  They
+# cannot unwind through the C stack, so they are parked here until the frame
+# around them finishes, then raised from Python.
+_paint_errors = []
+
+
+cdef void _raise_paint_error() except *:
+    cdef object exc
+    if _paint_errors:
+        exc = _paint_errors.pop(0)
+        del _paint_errors[:]
+        raise exc
+
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +217,213 @@ cdef void to_key_combo(object value, cui_key_combo *out) except *:
 
 cdef object from_key_combo(cui_key_combo *value):
     return KeyCombo(value[0].mods, value[0].key)
+
+
+# ---------------------------------------------------------------------------
+# Chart data: C arrays of structs whose fields are Python-owned strings and
+# value arrays.  Everything is parked in Context._keep until the frame ends.
+# ---------------------------------------------------------------------------
+
+cdef const cui_series *_series_array(Context ctx, object values, int *count) except NULL:
+    cdef list seq
+    cdef Py_ssize_t n, i
+    cdef bytes block
+    cdef cui_series *arr
+    cdef const float *data
+    cdef int inner = 0
+    cdef object item
+    if values is None:
+        count[0] = 0
+        return NULL
+    seq = list(values)
+    n = len(seq)
+    block = PyBytes_FromStringAndSize(NULL, <Py_ssize_t>sizeof(cui_series) * (n if n else 1))
+    arr = <cui_series *>PyBytes_AsString(block)
+    memset(arr, 0, sizeof(cui_series) * (n if n else 1))
+    for i in range(n):
+        item = seq[i]
+        if not isinstance(item, Series):
+            raise TypeError("chart series must be cui.Series values")
+        data = ctx._c_float_array(item.values, &inner)
+        arr[i].values = data
+        arr[i].count = inner
+        if item.name is not None:
+            arr[i].name = ctx._s(item.name)
+        if item.color is not None:
+            arr[i].color = _color(item.color)
+    count[0] = <int>n
+    ctx._keep.append(block)
+    return arr
+
+
+cdef const cui_dot_series *_dot_series_array(Context ctx, object values, int *count) except NULL:
+    cdef list seq
+    cdef Py_ssize_t n, i
+    cdef bytes block
+    cdef cui_dot_series *arr
+    cdef const float *data
+    cdef int inner = 0
+    cdef object item
+    if values is None:
+        count[0] = 0
+        return NULL
+    seq = list(values)
+    n = len(seq)
+    block = PyBytes_FromStringAndSize(NULL, <Py_ssize_t>sizeof(cui_dot_series) * (n if n else 1))
+    arr = <cui_dot_series *>PyBytes_AsString(block)
+    memset(arr, 0, sizeof(cui_dot_series) * (n if n else 1))
+    for i in range(n):
+        item = seq[i]
+        if not isinstance(item, DotSeries):
+            raise TypeError("dot-chart series must be cui.DotSeries values")
+        data = ctx._c_float_array(item.values, &inner)
+        arr[i].values = data
+        arr[i].accent = <uint8_t>bool(item.accent)
+        if item.name is not None:
+            arr[i].name = ctx._s(item.name)
+    count[0] = <int>n
+    ctx._keep.append(block)
+    return arr
+
+
+cdef const cui_vec2 *_vec2_array(Context ctx, object points, int *count) except NULL:
+    cdef list seq
+    cdef Py_ssize_t n, i
+    cdef bytes block
+    cdef cui_vec2 *arr
+    if points is None:
+        count[0] = 0
+        return NULL
+    seq = list(points)
+    n = len(seq)
+    block = PyBytes_FromStringAndSize(NULL, <Py_ssize_t>sizeof(cui_vec2) * (n if n else 1))
+    arr = <cui_vec2 *>PyBytes_AsString(block)
+    for i in range(n):
+        arr[i].x = <float>seq[i][0]
+        arr[i].y = <float>seq[i][1]
+    count[0] = <int>n
+    ctx._keep.append(block)
+    return arr
+
+
+cdef const cui_chart_annotation *_annotation_array(Context ctx, object values, int *count) except NULL:
+    cdef list seq
+    cdef Py_ssize_t n, i
+    cdef bytes block
+    cdef cui_chart_annotation *arr
+    cdef object item
+    if values is None:
+        count[0] = 0
+        return NULL
+    seq = list(values)
+    n = len(seq)
+    block = PyBytes_FromStringAndSize(NULL, <Py_ssize_t>sizeof(cui_chart_annotation) * (n if n else 1))
+    arr = <cui_chart_annotation *>PyBytes_AsString(block)
+    memset(arr, 0, sizeof(cui_chart_annotation) * (n if n else 1))
+    for i in range(n):
+        item = seq[i]
+        if not isinstance(item, ChartAnnotation):
+            raise TypeError("chart annotations must be cui.ChartAnnotation values")
+        arr[i].kind = <int>item.kind
+        arr[i].x = <double>item.x
+        arr[i].y = <double>item.y
+        arr[i].accent = <uint8_t>bool(item.accent)
+        if item.label is not None:
+            arr[i].label = ctx._s(item.label)
+        if item.detail is not None:
+            arr[i].detail = ctx._s(item.detail)
+    count[0] = <int>n
+    ctx._keep.append(block)
+    return arr
+
+
+cdef void _fill_chart_opts(Context ctx, cui_chart_opts *o, dict opts) except *:
+    cdef const char *const *labels
+    cdef int n_labels = 0
+    cdef const cui_chart_annotation *notes
+    cdef int n_notes = 0
+    cdef object key, value
+    for key, value in opts.items():
+        if key == "width":
+            to_size(value, &o.width)
+        elif key == "height":
+            o.height = <float>value
+        elif key == "labels":
+            labels = ctx._s_array(value, &n_labels)
+            o.labels = labels
+            o.label_count = n_labels
+        elif key == "label_count":
+            o.label_count = <int>value
+        elif key == "area":
+            o.area = <uint8_t>bool(value)
+        elif key == "no_grid":
+            o.no_grid = <uint8_t>bool(value)
+        elif key == "no_legend":
+            o.no_legend = <uint8_t>bool(value)
+        elif key == "stacked":
+            o.stacked = <uint8_t>bool(value)
+        elif key == "smooth":
+            o.smooth = <uint8_t>bool(value)
+        elif key == "format":
+            o.format = ctx._s(value) if value is not None else NULL
+        elif key == "min":
+            o.min = <float>value
+        elif key == "max":
+            o.max = <float>value
+        elif key == "annotations":
+            notes = _annotation_array(ctx, value, &n_notes)
+            o.annotations = notes
+            o.annotation_count = n_notes
+        elif key == "annotation_count":
+            o.annotation_count = <int>value
+        else:
+            raise TypeError("unknown chart option %r" % (key,))
+
+
+cdef void _fill_dot_chart_opts(Context ctx, cui_dot_chart_opts *o, dict opts) except *:
+    cdef const cui_chart_annotation *notes
+    cdef int n_notes = 0
+    cdef object key, value
+    for key, value in opts.items():
+        if key == "width":
+            to_size(value, &o.width)
+        elif key == "height":
+            o.height = <float>value
+        elif key == "x_min":
+            o.x_min = <double>value
+        elif key == "x_max":
+            o.x_max = <double>value
+        elif key == "x_units":
+            o.x_units = <int>value
+        elif key == "x_format":
+            o.x_format = ctx._s(value) if value is not None else NULL
+        elif key == "x_step":
+            o.x_step = <double>value
+        elif key == "min":
+            o.min = <float>value
+        elif key == "max":
+            o.max = <float>value
+        elif key == "format":
+            o.format = ctx._s(value) if value is not None else NULL
+        elif key == "unit":
+            o.unit = ctx._s(value) if value is not None else NULL
+        elif key == "pitch":
+            o.pitch = <float>value
+        elif key == "no_grid":
+            o.no_grid = <uint8_t>bool(value)
+        elif key == "no_axis":
+            o.no_axis = <uint8_t>bool(value)
+        elif key == "no_readout":
+            o.no_readout = <uint8_t>bool(value)
+        elif key == "annotations":
+            notes = _annotation_array(ctx, value, &n_notes)
+            o.annotations = notes
+            o.annotation_count = n_notes
+        elif key == "annotation_count":
+            o.annotation_count = <int>value
+        else:
+            raise TypeError("unknown dot-chart option %r" % (key,))
+
 
 
 # ---------------------------------------------------------------------------
@@ -342,6 +586,8 @@ cdef class Context:
         self._owns = False
         self._keep = []
         self._text_buffers = {}
+        self._split_buffers = {}
+        self._split_stack = []
         self._id_stack = []
         self._disabled_stack = []
         self._width = 0.0
@@ -395,6 +641,8 @@ cdef class Context:
         if self._ui != NULL and self._ui != ui:
             self._keep = []
             self._text_buffers.clear()
+            self._split_buffers.clear()
+            self._split_stack = []
         self._ui = ui
         self._owns = False
         if self._thread_id is None:
@@ -403,6 +651,10 @@ cdef class Context:
     def _bind_ptr(self, uintptr_t address):
         """Bind the Python object to the C context the app loop passes in."""
         self._adopt(<cui_ctx *>address)
+        # A new app frame starts here: release the strings and arrays the paint
+        # phase of the previous frame may still have referenced.
+        self._keep = []
+        _raise_paint_error()
 
     # -- lifetime ----------------------------------------------------------
 
@@ -414,6 +666,8 @@ cdef class Context:
         self._owns = False
         self._keep = []
         self._text_buffers.clear()
+        self._split_buffers.clear()
+        self._split_stack = []
         self._renderer = None
 
     cdef cui_ctx *_ctx(self) except NULL:
@@ -434,12 +688,18 @@ cdef class Context:
 
     def begin_frame(self, float dt=1.0 / 60.0):
         """Start a frame. Releases the previous frame's kept-alive objects."""
+        _raise_paint_error()
         self._keep = []
         cui_begin_frame(self._ctx(), dt)
 
     def end_frame(self):
         """Finish the frame; :meth:`draw_data` is valid from here on."""
         cui_end_frame(self._ctx())
+        # Nothing that CUI kept can reach Python after the paint phase: drop the
+        # strings and canvas callbacks so a callback that closes over this
+        # Context cannot form a reference cycle with it.
+        self._keep = []
+        _raise_paint_error()
 
     @property
     def width(self):
@@ -505,6 +765,227 @@ cdef class Context:
         cdef DrawData dd = self.draw_data()
         dd.write_png(path)
         return dd
+
+    # -- custom paint ------------------------------------------------------
+
+    def canvas(self, id, width, height, paint):
+        """A box of ``width`` x ``height`` painted by ``paint(rect)``.
+
+        The callback runs while CUI paints the frame, after layout, so it must
+        draw through this same context.  Its exception is re-raised after the
+        frame instead of crossing the C stack.
+        """
+        cdef cui_canvas_result res
+        cdef pycui_canvas_state state
+        cdef object wrapper
+
+        if not callable(paint):
+            raise TypeError("canvas() needs a callable paint(rect)")
+
+        def call(object rect):
+            try:
+                paint(Rect(rect[0], rect[1], rect[2], rect[3]))
+            except BaseException as exc:
+                _paint_errors.append(exc)
+                cui_app_quit(NULL)
+
+        wrapper = call
+        self._keep.append(wrapper)
+        state.callable = <PyObject *>wrapper
+        res = cui_canvas(self._ctx(), self._s(id), _size(width), _size(height),
+                         <cui_paint_fn>pycui_canvas_trampoline, &state, sizeof(state))
+        return CanvasResult(
+            Rect(res.rect.x, res.rect.y, res.rect.w, res.rect.h),
+            bool(res.hovered),
+            bool(res.pressed),
+            bool(res.clicked),
+            Vec2(res.mouse.x, res.mouse.y),
+        )
+
+    def draw_polyline(self, points, float thickness, color, bint closed=False):
+        """Draw a connected line through ``points`` (a sequence of (x, y))."""
+        cdef int n = 0
+        cdef const cui_vec2 *arr = _vec2_array(self, points, &n)
+        cui_draw_polyline(self._ctx(), arr, n, thickness, _color(color), closed)
+
+    def draw_polygon(self, points, color):
+        """Draw a filled polygon through ``points``."""
+        cdef int n = 0
+        cdef const cui_vec2 *arr = _vec2_array(self, points, &n)
+        cui_draw_polygon(self._ctx(), arr, n, _color(color))
+
+    # -- containers --------------------------------------------------------
+
+    def split_begin(self, id, ratio=0.0, **opts):
+        """Start a split view; the ratio lives in the context, not on the stack."""
+        cdef cui_split_opts o
+        cdef bytes block
+        cdef float *ptr
+        cdef object key = id
+        cdef object option, value
+        block = self._split_buffers.get(key)
+        if block is None:
+            block = PyBytes_FromStringAndSize(NULL, sizeof(float))
+            self._split_buffers[key] = block
+        ptr = <float *>PyBytes_AsString(block)
+        ptr[0] = <float>ratio
+        memset(&o, 0, sizeof(o))
+        for option, value in opts.items():
+            if option == "vertical":
+                o.vertical = <uint8_t>bool(value)
+            elif option == "min_first":
+                o.min_first = <float>value
+            elif option == "min_second":
+                o.min_second = <float>value
+            elif option == "width":
+                to_size(value, &o.width)
+            elif option == "height":
+                to_size(value, &o.height)
+            else:
+                raise TypeError("unknown split option %r" % (option,))
+        cui_split_begin(self._ctx(), self._s(id), ptr, &o)
+        self._split_stack.append((key, block))
+        return float(ptr[0])
+
+    def split_next(self):
+        """The divider has been laid out; build the second pane."""
+        cui_split_next(self._ctx())
+
+    def split_end(self):
+        """Close the split view and return the (possibly dragged) ratio."""
+        cdef bytes block
+        cdef float *ptr
+        cdef tuple entry
+        if not self._split_stack:
+            raise RuntimeError("split_end() without a matching split_begin()")
+        entry = self._split_stack.pop()
+        cui_split_end(self._ctx())
+        block = entry[1]
+        ptr = <float *>PyBytes_AsString(block)
+        return float(ptr[0])
+
+    # -- charts ------------------------------------------------------------
+
+    def line_chart(self, id, series, **opts):
+        """A line chart: a sequence of :class:`cui.Series`."""
+        cdef cui_chart_opts o
+        cdef const cui_series *arr
+        cdef int n = 0
+        memset(&o, 0, sizeof(o))
+        _fill_chart_opts(self, &o, opts)
+        arr = _series_array(self, series, &n)
+        cui_line_chart_ex(self._ctx(), self._s(id), arr, n, &o)
+
+    def bar_chart(self, id, series, **opts):
+        """A bar chart: a sequence of :class:`cui.Series`."""
+        cdef cui_chart_opts o
+        cdef const cui_series *arr
+        cdef int n = 0
+        memset(&o, 0, sizeof(o))
+        _fill_chart_opts(self, &o, opts)
+        arr = _series_array(self, series, &n)
+        cui_bar_chart_ex(self._ctx(), self._s(id), arr, n, &o)
+
+    def donut_chart(self, id, values, labels=None, **opts):
+        """A donut chart: a value per label, with an optional legend."""
+        cdef cui_chart_opts o
+        cdef const float *vals
+        cdef int n_vals = 0
+        cdef dict options = dict(opts)
+        if labels is not None:
+            options["labels"] = labels
+        memset(&o, 0, sizeof(o))
+        _fill_chart_opts(self, &o, options)
+        vals = self._c_float_array(values, &n_vals)
+        if o.label_count and o.label_count != n_vals:
+            raise ValueError("donut_chart() needs one label per value")
+        cui_donut_chart_ex(self._ctx(), self._s(id), vals, o.labels, n_vals, &o)
+
+    def dot_chart(self, id, series, int count=0, **opts):
+        """A dot-matrix chart: a sequence of :class:`cui.DotSeries`."""
+        cdef cui_dot_chart_opts o
+        cdef const cui_dot_series *arr
+        cdef cui_dot_chart_result r
+        cdef int n = 0
+        cdef object seq
+        cdef Py_ssize_t longest = 0
+        seq = list(series) if series is not None else []
+        for item in seq:
+            if not isinstance(item, DotSeries):
+                raise TypeError("dot-chart series must be cui.DotSeries values")
+            if len(item.values) > longest:
+                longest = len(item.values)
+        if count <= 0:
+            count = <int>longest
+        memset(&o, 0, sizeof(o))
+        _fill_dot_chart_opts(self, &o, opts)
+        arr = _dot_series_array(self, seq, &n)
+        r = cui_dot_chart_ex(self._ctx(), self._s(id), arr, n, count, &o)
+        return DotChartResult(int(r.hovered), float(r.x), float(r.value), bool(r.clicked))
+
+    def event_track(self, id, times, capacity, minimum, maximum, selected=-1, **opts):
+        """A draggable event track; returns the edited times and selection."""
+        cdef cui_event_track_opts o
+        cdef cui_event_track_result r
+        cdef double *buf
+        cdef bytes block
+        cdef int count
+        cdef int selected_out = <int>selected
+        cdef int i
+        cdef object key, value
+        times = list(times or [])
+        if capacity < len(times):
+            raise ValueError("capacity is smaller than the number of times")
+        if capacity <= 0:
+            raise ValueError("capacity must be positive")
+        block = PyBytes_FromStringAndSize(NULL, <Py_ssize_t>sizeof(double) * capacity)
+        buf = <double *>PyBytes_AsString(block)
+        count = len(times)
+        for i in range(count):
+            buf[i] = <double>times[i]
+        self._keep.append(block)
+        memset(&o, 0, sizeof(o))
+        o.selected = &selected_out
+        for key, value in opts.items():
+            if key == "width":
+                to_size(value, &o.width)
+            elif key == "step":
+                o.step = <double>value
+            elif key == "units":
+                o.units = <int>value
+            elif key == "format":
+                o.format = self._s(value) if value is not None else NULL
+            elif key == "label_step":
+                o.label_step = <double>value
+            elif key == "no_add":
+                o.no_add = <uint8_t>bool(value)
+            elif key == "no_remove":
+                o.no_remove = <uint8_t>bool(value)
+            elif key == "no_axis":
+                o.no_axis = <uint8_t>bool(value)
+            else:
+                raise TypeError("unknown event-track option %r" % (key,))
+        r = cui_event_track_ex(self._ctx(), self._s(id), buf, &count, <int>capacity,
+                               <double>minimum, <double>maximum, &o)
+        return EventTrackResult(
+            [float(buf[i]) for i in range(count)],
+            int(selected_out),
+            bool(r.changed),
+            int(r.added),
+            int(r.removed),
+            bool(r.dragging),
+        )
+
+    # -- theme -------------------------------------------------------------
+
+    @property
+    def font_scale(self):
+        """User text scale multiplier; changing it affects the next frame."""
+        return pycui_theme_font_scale(self._ctx())
+
+    @font_scale.setter
+    def font_scale(self, float value):
+        pycui_theme_set_font_scale(self._ctx(), value)
 
     # -- ids ---------------------------------------------------------------
 
@@ -864,6 +1345,52 @@ cdef class Context:
 
 
 # ---------------------------------------------------------------------------
+# Native file dialogs
+# ---------------------------------------------------------------------------
+
+cdef object _file_dialog(cui_app *app, dict opts) except *:
+    cdef cui_file_dialog_opts o
+    cdef char out[4096]
+    cdef object kind = opts.pop("kind", 0)
+    cdef object title = opts.pop("title", None)
+    cdef object filter_name = opts.pop("filter_name", None)
+    cdef object filter_value = opts.pop("filter", None)
+    cdef object default_name = opts.pop("default_name", None)
+    cdef const char *c_title = NULL
+    cdef const char *c_filter_name = NULL
+    cdef const char *c_filter = NULL
+    cdef const char *c_default_name = NULL
+    if opts:
+        raise TypeError("unknown file-dialog option(s): %s" % ", ".join(sorted(opts)))
+    memset(&o, 0, sizeof(o))
+    o.kind = <int>kind
+    if title is not None:
+        c_title = PyUnicode_AsUTF8AndSize(title, NULL)
+        o.title = c_title
+    if filter_name is not None:
+        c_filter_name = PyUnicode_AsUTF8AndSize(filter_name, NULL)
+        o.filter_name = c_filter_name
+    if filter_value is not None:
+        c_filter = PyUnicode_AsUTF8AndSize(filter_value, NULL)
+        o.filter = c_filter
+    if default_name is not None:
+        c_default_name = PyUnicode_AsUTF8AndSize(default_name, NULL)
+        o.default_name = c_default_name
+    if not cui_app_file_dialog(app, &o, out, sizeof(out)):
+        return None
+    return out.decode("utf-8", "replace")
+
+
+def file_dialog(**opts):
+    """Run a native open/save/folder dialog; returns the path or ``None``.
+
+    Called from an ``App.run`` frame this uses that window; outside a running
+    app it returns ``None`` (CUI needs a window to parent the dialog).
+    """
+    return _file_dialog(NULL, dict(opts))
+
+
+# ---------------------------------------------------------------------------
 # App: window + event loop
 # ---------------------------------------------------------------------------
 
@@ -955,6 +1482,8 @@ cdef class App:
                 self._context = Context.__new__(Context)
             ctx = self._context
             ctx._adopt(cui_app_ui(self._app))
+        if self._context is not None:
+            self._context._keep = []
         return bool(ok)
 
     def run(self, frame, **desc):
@@ -984,8 +1513,12 @@ cdef class App:
             info = pycui_run_state_take_raise_info(&st)
         finally:
             pycui_run_state_release(&st)
+            # Break the frame's keep-alive chain (a canvas callback may close
+            # over this Context) before the app object goes away.
+            ctx._keep = []
         if info is not None:
             raise info[0].with_traceback(info[1])
+        _raise_paint_error()
         return rc
 
     def quit(self):
@@ -997,6 +1530,12 @@ cdef class App:
 
     def set_size(self, int width, int height):
         cui_app_set_size(self._app, width, height)
+
+    def file_dialog(self, **opts):
+        """Run a native open/save/folder dialog owned by this window."""
+        if self._app == NULL:
+            raise RuntimeError("App has not been created")
+        return _file_dialog(self._app, dict(opts))
 
     @property
     def size(self):

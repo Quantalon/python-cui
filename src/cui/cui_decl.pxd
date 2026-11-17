@@ -978,6 +978,11 @@ cdef extern from "cui/cui.h" nogil:
         int align
         cui_size width
 
+    ctypedef struct cui_dot_series:
+        const float * values
+        const char * name
+        uint8_t accent
+
     ctypedef struct cui_draw_cmd:
         cui_rect clip
         uintptr_t texture
@@ -1777,6 +1782,12 @@ cdef extern from "cui/cui.h" nogil:
         uint8_t disabled
         cui_size width
 
+    ctypedef struct cui_series:
+        const char * name
+        const float * values
+        int count
+        cui_color color
+
     ctypedef struct cui_shadow:
         float y
         float blur
@@ -2276,7 +2287,6 @@ cdef extern from "cui/cui.h" nogil:
     ctypedef struct cui_api_endpoint
     ctypedef struct cui_commit
     ctypedef struct cui_ctx
-    ctypedef struct cui_dot_series
     ctypedef struct cui_feature_flag
     ctypedef struct cui_filter_field
     ctypedef struct cui_hex_result
@@ -2289,7 +2299,6 @@ cdef extern from "cui/cui.h" nogil:
     ctypedef struct cui_query_node
     ctypedef struct cui_regex_match
     ctypedef struct cui_scatter_series
-    ctypedef struct cui_series
     ctypedef struct cui_stack_frame
     ctypedef struct cui_strings
     ctypedef struct cui_terminal_buffer
@@ -2297,6 +2306,8 @@ cdef extern from "cui/cui.h" nogil:
     ctypedef struct cui_timeline_track
     ctypedef struct cui_tree_table_events
     ctypedef struct cui_uptime_service
+
+    ctypedef void (*cui_paint_fn)(cui_ctx *, cui_rect, void *)
 
     cui_ctx * cui_create(const cui_ctx_desc * desc)
     void cui_destroy(cui_ctx * ui)
@@ -2757,6 +2768,7 @@ cdef extern from "cui/cui.h" nogil:
     void cui_draw_image(cui_ctx * ui, uintptr_t tex, cui_rect r, cui_rect uv, cui_corners radius, cui_color tint)
     void cui_push_clip(cui_ctx * ui, cui_rect r)
     void cui_pop_clip(cui_ctx * ui)
+    cui_canvas_result cui_canvas(cui_ctx * ui, const char * id, cui_size width, cui_size height, cui_paint_fn paint, const void * user, size_t user_size)
     void * cui_state(cui_ctx * ui, uint32_t id, size_t size)
     float cui_animate(cui_ctx * ui, uint32_t id, float target)
     float cui_animate_spring(cui_ctx * ui, uint32_t id, float target, float duration, float bounce)
@@ -2820,13 +2832,13 @@ cdef extern from "cui/cui_app.h" nogil:
 
     ctypedef struct cui_app
 
-    ctypedef void (*pycui_fnptr_1)(cui_ctx *, void *)
+    ctypedef void (*pycui_fnptr_2)(cui_ctx *, void *)
 
     cui_app * cui_app_create(const cui_app_desc * desc)
     void cui_app_destroy(cui_app * app)
     uint8_t cui_app_frame(cui_app * app)
     cui_ctx * cui_app_ui(cui_app * app)
-    int cui_app_run(const cui_app_desc * desc, pycui_fnptr_1 frame, void * user)
+    int cui_app_run(const cui_app_desc * desc, pycui_fnptr_2 frame, void * user)
     void cui_app_quit(cui_app * app)
     void cui_app_set_title(cui_app * app, const char * title)
     void cui_app_set_size(cui_app * app, int width, int height)

@@ -93,3 +93,39 @@ void pycui_run_state_release(pycui_run_state *st) {
     st->error = NULL;
     st->traceback = NULL;
 }
+
+void pycui_canvas_trampoline(cui_ctx *ui, cui_rect rect, void *user) {
+    pycui_canvas_state *st = (pycui_canvas_state *)user;
+    PyGILState_STATE gil;
+    PyObject *arg;
+    PyObject *res;
+
+    (void)ui;
+    if (st == NULL || st->callable == NULL) return;
+    gil = PyGILState_Ensure();
+    arg = Py_BuildValue("(dddd)", (double)rect.x, (double)rect.y,
+                        (double)rect.w, (double)rect.h);
+    if (arg == NULL) {
+        PyErr_WriteUnraisable(st->callable);
+        PyGILState_Release(gil);
+        return;
+    }
+    res = PyObject_CallOneArg(st->callable, arg);
+    Py_DECREF(arg);
+    if (res == NULL) {
+        PyErr_WriteUnraisable(st->callable);
+    } else {
+        Py_DECREF(res);
+    }
+    PyGILState_Release(gil);
+}
+
+float pycui_theme_font_scale(cui_ctx *ui) {
+    cui_theme *theme = cui_theme_get(ui);
+    return theme != NULL ? theme->font_scale : 1.0f;
+}
+
+void pycui_theme_set_font_scale(cui_ctx *ui, float value) {
+    cui_theme *theme = cui_theme_get(ui);
+    if (theme != NULL) theme->font_scale = value;
+}

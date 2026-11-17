@@ -23,12 +23,62 @@ def frame(ui: cui.UI) -> None:
         if ui.button("Save", variant=cui.ButtonVariant.PRIMARY, icon=cui.Icon.CHECK):
             ui.toast("Saved", tone=cui.Tone.SUCCESS)
 
-cui.App(title="Hello", width=900, height=600).run(frame)
+cui.App().run(frame, title="Hello", width=900, height=600)
 ```
 
-本机已编译通过并跑完测试；离屏渲染的界面示例见 `examples/components.py`：
+本机已编译通过并跑完测试。CUI 官方的示例应用已经移植到 `examples/` 下；每个示例既能开原生窗口，
+也能加 `--shot` 用软件渲染离屏输出 PNG（不需要窗口、X server 或 GPU）：
 
-![浅色主题](docs/images/components-light.png)
+```sh
+python examples/todo.py                       # 原生窗口
+python examples/todo.py --shot out.png        # 离屏渲染
+python examples/dashboard.py --dark --shot dark.png
+python examples/notes.py --frames 5 --shot notes.png
+```
+
+| 示例 | 内容 |
+| --- | --- |
+| `hello.py` | 最小的窗口、标题、开关和按钮 |
+| `todo.py` | 待办列表：过滤、确认对话框、保存到文件 |
+| `settings.py` | 设置页：侧栏、表单、外观与危险操作 |
+| `notes.py` | 笔记：分栏、搜索、上下文菜单、命令面板 |
+| `dashboard.py` | 仪表盘：折线图、环形图、表格、响应式侧栏 |
+| `assistant.py` | 聊天助手：推理、工具调用、计划、来源与输入框 |
+| `mail.py` | 三栏邮件：自绘列表行、分栏、对话框、抽屉 |
+| `music.py` | 音乐播放器：自绘封面与均衡器、滑杆、菜单 |
+| `tracker.py` | 议题跟踪：自绘状态图标、活动时间线、命令面板 |
+| `finance.py` | 财务总览：余额图、卡片、环形图、预算与进度环 |
+| `caffeine.py` | 咖啡因曲线：点阵图、标注、可拖动事件轨、点阵显示 |
+
+CUI 的 `gallery`（组件总览）没有整体移植：它覆盖了大量仍在 Phase 3 的组件
+（终端、文件浏览器、代码编辑器、树表等）；组件总览仍由 `examples/components.py`
+提供。上面的 11 个应用示例是 `CUI/examples` 中除 `gallery` 外的全部应用。
+
+<table>
+<tr>
+<td><img src="docs/images/examples/dashboard.png" width="420" alt="Dashboard"></td>
+<td><img src="docs/images/examples/assistant.png" width="420" alt="Assistant"></td>
+</tr>
+<tr>
+<td><img src="docs/images/examples/mail.png" width="420" alt="Mail"></td>
+<td><img src="docs/images/examples/music.png" width="420" alt="Music"></td>
+</tr>
+<tr>
+<td><img src="docs/images/examples/notes.png" width="420" alt="Notes"></td>
+<td><img src="docs/images/examples/tracker.png" width="420" alt="Tracker"></td>
+</tr>
+<tr>
+<td><img src="docs/images/examples/finance.png" width="420" alt="Finance"></td>
+<td><img src="docs/images/examples/caffeine.png" width="420" alt="Caffeine"></td>
+</tr>
+<tr>
+<td><img src="docs/images/examples/settings.png" width="420" alt="Settings"></td>
+<td><img src="docs/images/examples/todo.png" width="420" alt="To do"></td>
+</tr>
+</table>
+
+离屏渲染的组件总览仍是 `examples/components.py`（浅色/深色截图见
+`docs/images/components-light.png` 与 `components-dark.png`）：
 
 ```sh
 python examples/components.py out.png          # 浅色
@@ -59,6 +109,7 @@ macOS 上 `xcode-select --install`，Linux 上 `build-essential` 加 `libx11-dev
 | `cui.Context` / `cui.SoftwareRenderer` | 离屏渲染：`begin_frame()` / `end_frame()` / `draw_data()` / `screenshot(path)`，不需要窗口和 GPU。 |
 | `cui._api` | 生成的低层封装：**一个 CUI 函数对应一个函数**，选项结构体变成关键字参数，出参变成返回值。`ui` 上找不到的方法会自动从这一层取。 |
 | `cui.Color` / `cui.Size` / `cui.Date` / `cui.TextResult` | C 结构体对应的 Python 值类型。颜色可以用 `Color(255,0,0)`、`Color.rgb(0xE5484D)` 或 `Color.token(cui.Token.ACCENT)`。 |
+| `cui.Series` / `cui.DotSeries` / `cui.ChartAnnotation` | 图表数据：折线/柱状序列、点阵图序列和图表标注；`CanvasResult`、`EventTrackResult` 是 canvas / 事件轨的返回值。 |
 | 枚举与图标 | `cui.ButtonVariant`、`cui.Tone`、`cui.ThemeMode`、`cui.Icon.CHECK`、`cui.ICON_PLUS` 等，全部从 CUI 头文件生成。 |
 
 立即模式的约定和 CUI 一样：每帧调用组件函数，函数返回这一帧发生了什么；你的变量就是状态。
@@ -90,7 +141,7 @@ src/cui/
   _gen/COVERAGE.md   生成：哪些函数已封装、哪些留到下一阶段
 tools/gen_cui.py     生成器（libclang 解析 cui.h / cui_render.h / cui_app.h）
 tests/               pytest：转换、生命周期、离屏渲染、门面覆盖、生成物同步
-examples/            可运行示例
+examples/            移植自 CUI/examples 的示例应用 + 共享的 _common.py 运行器
 ```
 
 映射规则（由 `tools/gen_cui.py` 实现）：
@@ -124,13 +175,16 @@ $env:PYCUI_WINDOW_TESTS = "1"; python -m pytest tests -q   # 额外跑原生窗�
 ```
 
 默认测试全部离屏（`cui_sw_*` 软件渲染），不需要窗口、X server 或 GPU，CI 上稳定。
+`tests/test_examples.py` 会把 `examples/` 里的每个应用按 `--shot` 渲染一遍，检查它们没有
+异常且确实写出了 PNG；`tests/test_charts.py` 覆盖 canvas 回调、图表和事件轨。
 窗口测试需要一个可交互的桌面会话，因此用环境变量显式开启。
 
 ## 当前范围与已知限制
 
-- CUI 的 500 个公开函数里，**375 个由生成器封装**，49 个是手写的核心（生命周期、帧、App、渲染器），
-  其余 125 个在 `src/cui/_gen/COVERAGE.md` 里逐条列了原因：
-  需要 C 回调（`cui_canvas`、`cui_tree_sort`、`cui_state_on_free`）、变参（`cui_textf` 等）、
+- CUI 的 500 个公开函数里，**429 个已经封装**（369 个由生成器封装，60 个在 `_cui.pyx` 手写，
+  包括 canvas 绘制回调、折线/柱状/点阵图、事件轨、分栏等），其余 71 个在
+  `src/cui/_gen/COVERAGE.md` 里逐条列了原因：
+  需要 C 回调（`cui_tree_sort`、`cui_state_on_free` 等）、变参（`cui_textf` 等）、
   调用方分配的结构体数组（日志/终端/差异视图/树表等数据密集组件）、返回结构体的组件，
   以及 GL 渲染器接口。这些是计划里的 Phase 3 内容。
 - 没有内置无障碍与输入法支持：CUI 本身没有，绑定只能继承这个限制。

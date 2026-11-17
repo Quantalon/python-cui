@@ -9,6 +9,8 @@ cdef class Context:
     cdef bint _owns
     cdef object _keep
     cdef dict _text_buffers
+    cdef dict _split_buffers
+    cdef list _split_stack
     cdef object _thread_id
     cdef float _width
     cdef float _height

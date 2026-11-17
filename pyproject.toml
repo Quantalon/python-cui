@@ -3,12 +3,11 @@ requires = ["scikit-build-core>=0.10", "cython>=3.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "cui"
-description = "Python bindings for CUI, the immediate-mode native UI library written in C"
+name = "pycui"
+description = "Python bindings for CUI"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
-authors = [{ name = "PYCUI contributors" }]
 keywords = ["gui", "ui", "immediate-mode", "cui", "bindings", "cython"]
 classifiers = [
     "Development Status :: 4 - Beta",

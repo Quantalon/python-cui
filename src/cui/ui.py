@@ -21,7 +21,10 @@ from typing import Any, Callable, Iterable, Sequence
 
 from . import _api
 from ._cui import Context
+from ._gen.constants import Token
 from ._types import Color, Date, Rect, Size, TextResult
+
+_FOREGROUND = Color.token(Token.FOREGROUND)
 
 
 class _Block:
@@ -70,6 +73,51 @@ class _Scope:
 
     def __exit__(self, exc_type, exc, tb) -> bool:
         self._pop()
+        return False
+
+
+class _Split(_Block):
+    """A resizable split view; call :meth:`next` before the second pane."""
+
+    @property
+    def ratio(self) -> float:
+        """The split ratio after the user dragged the divider."""
+        return float(self.result) if self.result is not None else 0.0
+
+    def next(self) -> None:
+        self._ui.context.split_next()
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        self.result = self._ui.context.split_end()
+        return False
+
+
+class _Table(_Block):
+    """A table; ``row()`` starts a row, then use ``cell()`` / ``cell_text()``."""
+
+    def row(self, selected: bool = False) -> bool:
+        return _api.table_row(self._ui.context, selected)
+
+    def cell(self) -> None:
+        _api.table_cell(self._ui.context)
+
+    def cell_text(self, text: str) -> None:
+        _api.table_cell_text(self._ui.context, text)
+
+
+class _Clip:
+    """A clip rectangle for custom painting: ``with ui.clip(rect):``."""
+
+    def __init__(self, context: Context, rect: Rect):
+        self._context = context
+        self._rect = rect
+
+    def __enter__(self) -> "_Clip":
+        _api.push_clip(self._context, self._rect)
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        _api.pop_clip(self._context)
         return False
 
 
@@ -143,6 +191,30 @@ class UI:
     def scroll(self, **opts) -> _Block:
         """A scroll area with smooth scrolling and overlay scrollbars."""
         return _Block(self, lambda: _api.scroll_begin(self._ctx, **opts), lambda: _api.scroll_end(self._ctx))
+
+    def split(self, id: str, ratio: float = 0.0, **opts) -> _Split:
+        """A resizable split view; call ``split.next()`` between the two panes."""
+        return _Split(
+            self,
+            lambda: self._ctx.split_begin(id, ratio, **opts),
+            lambda: self._ctx.split_end(),
+        )
+
+    def table(self, id: str, columns, **opts) -> _Table:
+        """A table; ``with ui.table(...) as table:`` then ``table.row()``."""
+        return _Table(
+            self,
+            lambda: _api.table_begin(self._ctx, id, columns, **opts),
+            lambda: _api.table_end(self._ctx),
+        )
+
+    def context_menu(self, id: str, *, body: Callable[["UI"], None]) -> bool:
+        """A right-click menu anchored to the previous component."""
+        visible = _api.context_menu_begin(self._ctx, id)
+        if visible:
+            body(self)
+        _api.context_menu_end(self._ctx)
+        return bool(visible)
 
     def toolbar(self, id: str, **opts) -> _Block:
         return _Block(self, lambda: _api.toolbar_begin(self._ctx, id, **opts), lambda: _api.toolbar_end(self._ctx))
@@ -380,8 +452,9 @@ class UI:
     def metric(self, label: str, value: str, **opts) -> None:
         _api.metric(self._ctx, label, value, **opts)
 
-    def empty_state(self, title: str, **opts) -> None:
-        _api.empty_state(self._ctx, title, **opts)
+    def empty_state(self, title: str, **opts) -> bool:
+        """An empty view; returns true when its action button was clicked."""
+        return _api.empty_state(self._ctx, title, **opts)
 
     def tooltip(self, text: str) -> None:
         """Attach a tooltip to the previous component."""
@@ -389,6 +462,82 @@ class UI:
 
     def image(self, texture: int, rect: Rect, **opts) -> None:
         _api.image(self._ctx, texture, rect, **opts)
+
+    # -- charts and custom paint ------------------------------------------
+
+    def canvas(self, id: str, width, height, paint: Callable[[Rect], None]) -> Any:
+        """A box painted by ``paint(rect)`` while the frame is drawn.
+
+        Draw with this same ``ui`` inside the callback; the callback runs after
+        layout, so the rectangle is final.
+        """
+        return self._ctx.canvas(id, width, height, paint)
+
+    def line_chart(self, id: str, series, **opts) -> None:
+        """A line chart from :class:`cui.Series` values."""
+        self._ctx.line_chart(id, series, **opts)
+
+    def bar_chart(self, id: str, series, **opts) -> None:
+        """A bar chart from :class:`cui.Series` values."""
+        self._ctx.bar_chart(id, series, **opts)
+
+    def donut_chart(self, id: str, values, labels=None, **opts) -> None:
+        """A donut chart from values and their labels."""
+        self._ctx.donut_chart(id, values, labels, **opts)
+
+    def dot_chart(self, id: str, series, count: int = 0, **opts):
+        """A dot-matrix chart from :class:`cui.DotSeries` values."""
+        return self._ctx.dot_chart(id, series, count, **opts)
+
+    def event_track(self, id: str, times, capacity: int, minimum: float, maximum: float,
+                    selected: int = -1, **opts):
+        """A draggable event track; returns an :class:`cui.EventTrackResult`."""
+        return self._ctx.event_track(id, times, capacity, minimum, maximum, selected, **opts)
+
+    # -- immediate drawing, for canvas paint callbacks ---------------------
+
+    def draw_rect(self, rect: Rect, fill: Color, radius=0.0) -> None:
+        _api.draw_rect(self._ctx, rect, radius, fill)
+
+    def draw_rect_border(self, rect: Rect, fill: Color, border: Color,
+                         radius=0.0, border_width: float = 1.0) -> None:
+        _api.draw_rect_border(self._ctx, rect, radius, fill, border, border_width)
+
+    def draw_rect_gradient(self, rect: Rect, top: Color, bottom: Color, radius=0.0) -> None:
+        _api.draw_rect_gradient(self._ctx, rect, radius, top, bottom)
+
+    def draw_shadow(self, rect: Rect, blur: float, spread: float, offset,
+                    color: Color, radius=0.0) -> None:
+        _api.draw_shadow(self._ctx, rect, radius, blur, spread, offset, color)
+
+    def draw_line(self, a, b, thickness: float, color: Color) -> None:
+        _api.draw_line(self._ctx, a, b, thickness, color)
+
+    def draw_polyline(self, points, thickness: float, color: Color, closed: bool = False) -> None:
+        self._ctx.draw_polyline(points, thickness, color, closed)
+
+    def draw_polygon(self, points, color: Color) -> None:
+        self._ctx.draw_polygon(points, color)
+
+    def draw_circle(self, center, radius: float, color: Color) -> None:
+        _api.draw_circle(self._ctx, center, radius, color)
+
+    def draw_arc(self, center, radius: float, a0: float, a1: float,
+                 thickness: float, color: Color) -> None:
+        _api.draw_arc(self._ctx, center, radius, a0, a1, thickness, color)
+
+    def draw_text(self, text: str, pos, color: Color | None = None,
+                  font: int = 0, size: float = 13.0) -> None:
+        encoded = text.encode("utf-8")
+        _api.draw_text(self._ctx, font, size, pos, color if color is not None else _FOREGROUND,
+                       text, len(encoded))
+
+    def draw_icon(self, icon: str, rect: Rect, size: float, color: Color) -> None:
+        _api.draw_icon(self._ctx, icon, rect, size, color)
+
+    def clip(self, rect: Rect) -> _Clip:
+        """Clip custom painting to ``rect`` for the duration of the block."""
+        return _Clip(self._ctx, rect)
 
     # -- overlays (callback style) ----------------------------------------
 
@@ -413,6 +562,22 @@ class UI:
         if visible:
             body(self)
         _api.menu_end(self._ctx)
+        return bool(visible)
+
+    def user_menu(self, name: str, *, body: Callable[["UI"], None], **opts) -> bool:
+        """A user menu with an avatar, name and status."""
+        visible = _api.user_menu_begin(self._ctx, name, **opts)
+        if visible:
+            body(self)
+        _api.user_menu_end(self._ctx)
+        return bool(visible)
+
+    def reasoning(self, id: str, *, body: Callable[["UI"], None] | None = None, **opts) -> bool:
+        """A collapsible reasoning block."""
+        visible = _api.reasoning_begin(self._ctx, id, **opts)
+        if visible and body is not None:
+            body(self)
+        _api.reasoning_end(self._ctx)
         return bool(visible)
 
     def popover(self, id: str, *, body: Callable[["UI"], None], **opts) -> None:

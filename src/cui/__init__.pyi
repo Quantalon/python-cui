@@ -5,9 +5,9 @@ GENERATED FILE: produced by tools/gen_cui.py; do not edit by hand.
 
 from typing import Any, Sequence
 
-from ._cui import App, Context, DrawData, SoftwareRenderer
+from ._cui import App, Context, DrawData, SoftwareRenderer, file_dialog
 from ._gen.model import *
-from ._types import Color, Corners, Date, KeyCombo, Rect, Size, SizeKind, TextFlags, TextMetrics, TextResult, Vec2
+from ._types import CanvasResult, ChartAnnotation, Color, Corners, Date, DotChartResult, DotSeries, EventTrackResult, KeyCombo, Rect, Series, Size, SizeKind, TextFlags, TextMetrics, TextResult, Vec2
 from .ui import UI
 
 __version__: str
@@ -157,6 +157,7 @@ class Mod:
     CTRL: int = ...
     ALT: int = ...
     SUPER: int = ...
+    PRIMARY: int = ...
 
 class Cursor:
     ARROW: int = ...

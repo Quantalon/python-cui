@@ -539,13 +539,13 @@ cdef inline void *_pack_cui_choice(Context ctx, object items, int *count) except
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.description))
-        buf[i].description = <const char *>pycui_strings[-1]
+        buf[i].description = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.icon))
-        buf[i].icon = <const char *>pycui_strings[-1]
+        buf[i].icon = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.badge))
-        buf[i].badge = <const char *>pycui_strings[-1]
+        buf[i].badge = <const char *>pycui_strings[len(pycui_strings) - 1]
     count[0] = <int>n
     _keep_alive(ctx, block)
     _keep_alive(ctx, pycui_strings)
@@ -569,13 +569,13 @@ cdef inline void *_pack_cui_command(Context ctx, object items, int *count) excep
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.icon))
-        buf[i].icon = <const char *>pycui_strings[-1]
+        buf[i].icon = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.group))
-        buf[i].group = <const char *>pycui_strings[-1]
+        buf[i].group = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.shortcut))
-        buf[i].shortcut = <const char *>pycui_strings[-1]
+        buf[i].shortcut = <const char *>pycui_strings[len(pycui_strings) - 1]
     count[0] = <int>n
     _keep_alive(ctx, block)
     _keep_alive(ctx, pycui_strings)
@@ -628,7 +628,7 @@ cdef inline void *_pack_cui_flame_span(Context ctx, object items, int *count) ex
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.name))
-        buf[i].name = <const char *>pycui_strings[-1]
+        buf[i].name = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].start = <double>item.start
         buf[i].end = <double>item.end
         buf[i].depth = <int>item.depth
@@ -680,7 +680,7 @@ cdef inline void *_pack_cui_grid_column(Context ctx, object items, int *count) e
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].width = <float>item.width
         buf[i].align = <int>item.align
         buf[i].sortable = <uint8_t>bool(item.sortable)
@@ -709,9 +709,9 @@ cdef inline void *_pack_cui_markdown_result(Context ctx, object items, int *coun
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.link))
-        buf[i].link = <const char *>pycui_strings[-1]
+        buf[i].link = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.hovered_link))
-        buf[i].hovered_link = <const char *>pycui_strings[-1]
+        buf[i].hovered_link = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].task_offset = <int>item.task_offset
         buf[i].task_line = <int>item.task_line
         buf[i].task_checked = <uint8_t>bool(item.task_checked)
@@ -739,13 +739,13 @@ cdef inline void *_pack_cui_model(Context ctx, object items, int *count) except 
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.name))
-        buf[i].name = <const char *>pycui_strings[-1]
+        buf[i].name = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.detail))
-        buf[i].detail = <const char *>pycui_strings[-1]
+        buf[i].detail = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.badge))
-        buf[i].badge = <const char *>pycui_strings[-1]
+        buf[i].badge = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.icon))
-        buf[i].icon = <const char *>pycui_strings[-1]
+        buf[i].icon = <const char *>pycui_strings[len(pycui_strings) - 1]
     count[0] = <int>n
     _keep_alive(ctx, block)
     _keep_alive(ctx, pycui_strings)
@@ -769,9 +769,9 @@ cdef inline void *_pack_cui_plan_step(Context ctx, object items, int *count) exc
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.detail))
-        buf[i].detail = <const char *>pycui_strings[-1]
+        buf[i].detail = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].status = <int>item.status
     count[0] = <int>n
     _keep_alive(ctx, block)
@@ -796,7 +796,7 @@ cdef inline void *_pack_cui_presence_user(Context ctx, object items, int *count)
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.name))
-        buf[i].name = <const char *>pycui_strings[-1]
+        buf[i].name = <const char *>pycui_strings[len(pycui_strings) - 1]
         to_color(item.color, &buf[i].color)
         buf[i].avatar = <uintptr_t>item.avatar
         buf[i].idle = <uint8_t>bool(item.idle)
@@ -823,11 +823,11 @@ cdef inline void *_pack_cui_prompt_suggestion(Context ctx, object items, int *co
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.icon))
-        buf[i].icon = <const char *>pycui_strings[-1]
+        buf[i].icon = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.detail))
-        buf[i].detail = <const char *>pycui_strings[-1]
+        buf[i].detail = <const char *>pycui_strings[len(pycui_strings) - 1]
     count[0] = <int>n
     _keep_alive(ctx, block)
     _keep_alive(ctx, pycui_strings)
@@ -876,11 +876,11 @@ cdef inline void *_pack_cui_source(Context ctx, object items, int *count) except
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.url))
-        buf[i].url = <const char *>pycui_strings[-1]
+        buf[i].url = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.snippet))
-        buf[i].snippet = <const char *>pycui_strings[-1]
+        buf[i].snippet = <const char *>pycui_strings[len(pycui_strings) - 1]
     count[0] = <int>n
     _keep_alive(ctx, block)
     _keep_alive(ctx, pycui_strings)
@@ -904,9 +904,9 @@ cdef inline void *_pack_cui_speed_action(Context ctx, object items, int *count) 
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.icon))
-        buf[i].icon = <const char *>pycui_strings[-1]
+        buf[i].icon = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.label))
-        buf[i].label = <const char *>pycui_strings[-1]
+        buf[i].label = <const char *>pycui_strings[len(pycui_strings) - 1]
     count[0] = <int>n
     _keep_alive(ctx, block)
     _keep_alive(ctx, pycui_strings)
@@ -930,9 +930,9 @@ cdef inline void *_pack_cui_swipe_action(Context ctx, object items, int *count) 
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.icon))
-        buf[i].icon = <const char *>pycui_strings[-1]
+        buf[i].icon = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.label))
-        buf[i].label = <const char *>pycui_strings[-1]
+        buf[i].label = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].tone = <int>item.tone
     count[0] = <int>n
     _keep_alive(ctx, block)
@@ -957,9 +957,9 @@ cdef inline void *_pack_cui_tab_bar_item(Context ctx, object items, int *count) 
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.icon))
-        buf[i].icon = <const char *>pycui_strings[-1]
+        buf[i].icon = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.label))
-        buf[i].label = <const char *>pycui_strings[-1]
+        buf[i].label = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].badge = <int>item.badge
     count[0] = <int>n
     _keep_alive(ctx, block)
@@ -984,7 +984,7 @@ cdef inline void *_pack_cui_table_column(Context ctx, object items, int *count) 
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         to_size(item.width, &buf[i].width)
         buf[i].align = <int>item.align
         buf[i].sortable = <uint8_t>bool(item.sortable)
@@ -1011,9 +1011,9 @@ cdef inline void *_pack_cui_ticker_item(Context ctx, object items, int *count) e
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.label))
-        buf[i].label = <const char *>pycui_strings[-1]
+        buf[i].label = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.value))
-        buf[i].value = <const char *>pycui_strings[-1]
+        buf[i].value = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].delta = <float>item.delta
         buf[i].lower_is_better = <uint8_t>bool(item.lower_is_better)
     count[0] = <int>n
@@ -1039,9 +1039,9 @@ cdef inline void *_pack_cui_toc_item(Context ctx, object items, int *count) exce
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.anchor))
-        buf[i].anchor = <const char *>pycui_strings[-1]
+        buf[i].anchor = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].level = <int>item.level
     count[0] = <int>n
     _keep_alive(ctx, block)
@@ -1067,9 +1067,9 @@ cdef inline void *_pack_cui_tour_step(Context ctx, object items, int *count) exc
         item = items[i]
         buf[i].target = <uint32_t>item.target
         pycui_strings.append(_utf8(item.title))
-        buf[i].title = <const char *>pycui_strings[-1]
+        buf[i].title = <const char *>pycui_strings[len(pycui_strings) - 1]
         pycui_strings.append(_utf8(item.body))
-        buf[i].body = <const char *>pycui_strings[-1]
+        buf[i].body = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].placement = <int>item.placement
     count[0] = <int>n
     _keep_alive(ctx, block)
@@ -1094,7 +1094,7 @@ cdef inline void *_pack_cui_viz_item(Context ctx, object items, int *count) exce
     for i in range(n):
         item = items[i]
         pycui_strings.append(_utf8(item.label))
-        buf[i].label = <const char *>pycui_strings[-1]
+        buf[i].label = <const char *>pycui_strings[len(pycui_strings) - 1]
         buf[i].value = <float>item.value
         to_color(item.color, &buf[i].color)
     count[0] = <int>n
@@ -1665,36 +1665,6 @@ def scroll_to(Context ctx, scroll_id, y):
     """Wrap ``cui_scroll_to``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
     cui_scroll_to(pycui_ctx, ctx._s(scroll_id), <float>y)
-    return None
-
-def split_begin(Context ctx, id, ratio=0.0, *, vertical=False, min_first=None, min_second=None, width=None, height=None):
-    """Wrap ``cui_split_begin``."""
-    cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef float pycui_out_ratio = <float>ratio
-    cdef cui_split_opts opts
-    memset(&opts, 0, sizeof(opts))
-    opts.vertical = <uint8_t>bool(vertical)
-    if min_first is not None:
-        opts.min_first = <float>(min_first)
-    if min_second is not None:
-        opts.min_second = <float>(min_second)
-    if width is not None:
-        to_size(width, &opts.width)
-    if height is not None:
-        to_size(height, &opts.height)
-    cui_split_begin(pycui_ctx, ctx._s(id), &pycui_out_ratio, &opts)
-    return float(pycui_out_ratio)
-
-def split_next(Context ctx):
-    """Wrap ``cui_split_next``."""
-    cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cui_split_next(pycui_ctx)
-    return None
-
-def split_end(Context ctx):
-    """Wrap ``cui_split_end``."""
-    cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cui_split_end(pycui_ctx)
     return None
 
 def text(Context ctx, text, *, font=None, size=None, color=None, align=None, nowrap=False, tabular=False, selectable=False, width=None, line_height=None, direction=None):
@@ -2647,37 +2617,6 @@ def table_end(Context ctx):
     cdef cui_ctx *pycui_ctx = ctx._ctx()
     cui_table_end(pycui_ctx)
     return None
-
-def donut_chart(Context ctx, id, labels, values=0.0, *, width=None, height=None, label_count=None, area=False, no_grid=False, no_legend=False, stacked=False, smooth=False, format=None, min=None, max=None, annotations=None, annotation_count=None):
-    """Wrap ``cui_donut_chart_ex``."""
-    cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef float pycui_out_values = <float>values
-    cdef const char *const *pycui_ptr_labels
-    cdef int pycui_n_labels
-    cdef cui_chart_opts opts
-    pycui_ptr_labels = _s_array_any(ctx, labels, &pycui_n_labels)
-    memset(&opts, 0, sizeof(opts))
-    if width is not None:
-        to_size(width, &opts.width)
-    if height is not None:
-        opts.height = <float>(height)
-    if label_count is not None:
-        opts.label_count = <int>(label_count)
-    opts.area = <uint8_t>bool(area)
-    opts.no_grid = <uint8_t>bool(no_grid)
-    opts.no_legend = <uint8_t>bool(no_legend)
-    opts.stacked = <uint8_t>bool(stacked)
-    opts.smooth = <uint8_t>bool(smooth)
-    if format is not None:
-        opts.format = ctx._s(format)
-    if min is not None:
-        opts.min = <float>(min)
-    if max is not None:
-        opts.max = <float>(max)
-    if annotation_count is not None:
-        opts.annotation_count = <int>(annotation_count)
-    cui_donut_chart_ex(pycui_ctx, ctx._s(id), &pycui_out_values, pycui_ptr_labels, pycui_n_labels, &opts)
-    return float(pycui_out_values)
 
 def sparkline(Context ctx, values, width, height, color):
     """Wrap ``cui_sparkline``."""
@@ -5517,26 +5456,6 @@ def draw_line(Context ctx, a, b, thickness, color):
     to_color(color, &pycui_value_color)
     cui_draw_line(pycui_ctx, pycui_value_a, pycui_value_b, <float>thickness, pycui_value_color)
     return None
-
-def draw_polyline(Context ctx, count, thickness, color, closed, points=None):
-    """Wrap ``cui_draw_polyline``."""
-    cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef cui_vec2 pycui_out_points
-    cdef cui_color pycui_value_color
-    to_vec2(points, &pycui_out_points)
-    to_color(color, &pycui_value_color)
-    cui_draw_polyline(pycui_ctx, &pycui_out_points, <int>count, <float>thickness, pycui_value_color, <uint8_t>bool(closed))
-    return from_vec2(&pycui_out_points)
-
-def draw_polygon(Context ctx, count, color, points=None):
-    """Wrap ``cui_draw_polygon``."""
-    cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef cui_vec2 pycui_out_points
-    cdef cui_color pycui_value_color
-    to_vec2(points, &pycui_out_points)
-    to_color(color, &pycui_value_color)
-    cui_draw_polygon(pycui_ctx, &pycui_out_points, <int>count, pycui_value_color)
-    return from_vec2(&pycui_out_points)
 
 def draw_circle(Context ctx, center, radius, color):
     """Wrap ``cui_draw_circle``."""

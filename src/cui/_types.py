@@ -6,7 +6,7 @@ C structs at the call site and costs nothing to pass around.
 
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import NamedTuple, Sequence
 
 __all__ = [
     "Color",
@@ -20,6 +20,12 @@ __all__ = [
     "TextMetrics",
     "Corners",
     "KeyCombo",
+    "Series",
+    "DotSeries",
+    "ChartAnnotation",
+    "CanvasResult",
+    "DotChartResult",
+    "EventTrackResult",
 ]
 
 
@@ -222,3 +228,60 @@ class KeyCombo(NamedTuple):
 
     mods: int = 0
     key: int = 0
+
+
+class Series(NamedTuple):
+    """One line or bar in a chart: a legend name, the values and an optional color."""
+
+    name: str | None
+    values: Sequence[float]
+    color: Color | None = None
+
+
+class DotSeries(NamedTuple):
+    """One stacked band in a dot-matrix chart."""
+
+    values: Sequence[float]
+    name: str | None = None
+    accent: bool = False
+
+
+class ChartAnnotation(NamedTuple):
+    """A threshold line, a vertical marker or a point drawn over a chart."""
+
+    kind: int = 0
+    x: float = 0.0
+    y: float = 0.0
+    label: str | None = None
+    detail: str | None = None
+    accent: bool = False
+
+
+class CanvasResult(NamedTuple):
+    """What a :meth:`cui.UI.canvas` call returned this frame."""
+
+    rect: Rect
+    hovered: bool = False
+    pressed: bool = False
+    clicked: bool = False
+    mouse: Vec2 = Vec2(0.0, 0.0)
+
+
+class DotChartResult(NamedTuple):
+    """The hovered sample and the click position of a dot-matrix chart."""
+
+    hovered: int = -1
+    x: float = 0.0
+    value: float = 0.0
+    clicked: bool = False
+
+
+class EventTrackResult(NamedTuple):
+    """The times an event track kept, plus what happened to them this frame."""
+
+    times: list[float]
+    selected: int = -1
+    changed: bool = False
+    added: int = 0
+    removed: int = 0
+    dragging: bool = False
