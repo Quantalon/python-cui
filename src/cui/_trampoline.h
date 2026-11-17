@@ -11,6 +11,7 @@
 
 #include <Python.h>
 #include <cui/cui.h>
+#include <cui/cui_app.h> /* cui_app_quit: only declared by the app layer */
 
 typedef struct pycui_run_state {
     PyObject *callable; /* frame(ui) */
