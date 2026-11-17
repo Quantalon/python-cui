@@ -3,7 +3,7 @@ requires = ["scikit-build-core>=0.10", "cython>=3.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "pycui"
+name = "python-cui"
 description = "Python bindings for CUI"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Software Development :: User Interfaces",
 ]
 # The library version tracks the vendored CUI release: <cui major>.<minor>.<patch>.<bindings revision>.
-version = "1.4.0.5"
+version = "1.4.0.6"
 dependencies = []
 
 [project.urls]
