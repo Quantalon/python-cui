@@ -1816,7 +1816,7 @@ def segmented(Context ctx, id, items, index=0, *, size=None, full_width=False, i
 def checkbox(Context ctx, label, value=False, *, description=None, disabled=False, indeterminate=False):
     """Wrap ``cui_checkbox_ex``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_value = <uint8_t>bool(value)
+    cdef c_bool pycui_out_value = <c_bool>bool(value)
     cdef cui_check_opts opts
     memset(&opts, 0, sizeof(opts))
     if description is not None:
@@ -1829,7 +1829,7 @@ def checkbox(Context ctx, label, value=False, *, description=None, disabled=Fals
 def switch(Context ctx, label, value=False, *, description=None, disabled=False, indeterminate=False):
     """Wrap ``cui_switch_ex``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_value = <uint8_t>bool(value)
+    cdef c_bool pycui_out_value = <c_bool>bool(value)
     cdef cui_check_opts opts
     memset(&opts, 0, sizeof(opts))
     if description is not None:
@@ -1897,7 +1897,7 @@ def rating(Context ctx, id, max, value=0):
 def chip(Context ctx, label, selected=False, *, icon=None, disabled=False):
     """Wrap ``cui_chip_ex``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_selected = <uint8_t>bool(selected)
+    cdef c_bool pycui_out_selected = <c_bool>bool(selected)
     cdef cui_chip_opts opts
     memset(&opts, 0, sizeof(opts))
     if icon is not None:
@@ -2301,7 +2301,7 @@ def tooltip(Context ctx, text):
 def dialog_begin(Context ctx, title, open=False, *, description=None, width=None, no_close_button=False, persistent=False):
     """Modal dialog. Shown while *open is true; closing sets it to false."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef cui_dialog_opts opts
     memset(&opts, 0, sizeof(opts))
     if description is not None:
@@ -2334,7 +2334,7 @@ def dialog_footer_end(Context ctx):
 def sheet_begin(Context ctx, title, open=False, *, side=None, size=None, description=None):
     """Wrap ``cui_sheet_begin``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef cui_sheet_opts opts
     memset(&opts, 0, sizeof(opts))
     if side is not None:
@@ -2510,7 +2510,7 @@ def meter(Context ctx, label, used, total, unit):
 def accordion_begin(Context ctx, title, open=False):
     """Accordion / disclosure. Content animates its height."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef bint pycui_result = cui_accordion_begin(pycui_ctx, ctx._s(title), &pycui_out_open)
     return (bool(pycui_result), bool(pycui_out_open))
 
@@ -2523,7 +2523,7 @@ def accordion_end(Context ctx):
 def tree_begin(Context ctx, label, open=False, *, icon=None, leaf=False, selected=False):
     """Wrap ``cui_tree_begin``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef cui_tree_opts opts
     memset(&opts, 0, sizeof(opts))
     if icon is not None:
@@ -2718,7 +2718,7 @@ def cropper(Context ctx, id, tex, image_w, image_h, crop=None, *, width=None, he
 def command_palette(Context ctx, commands, open=False):
     """Spotlight style command palette. Returns the index of the chosen command, or -1. Open it with a shortcut: if (cui_shortcut(ui, CUI_MOD_PRIMARY, CUI_KEY_K)) open = true;"""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef void *pycui_ptr_commands
     cdef int pycui_n_commands
     pycui_ptr_commands = _pack_cui_command(ctx, commands, &pycui_n_commands)
@@ -2876,7 +2876,7 @@ def toggle_group(Context ctx, id, labels, values=False, *, icons=None, exclusive
     cdef cui_ctx *pycui_ctx = ctx._ctx()
     cdef const char *const *pycui_ptr_labels
     cdef int pycui_n_labels
-    cdef uint8_t pycui_out_values = <uint8_t>bool(values)
+    cdef c_bool pycui_out_values = <c_bool>bool(values)
     cdef cui_toggle_group_opts opts
     pycui_ptr_labels = _s_array_any(ctx, labels, &pycui_n_labels)
     memset(&opts, 0, sizeof(opts))
@@ -3068,7 +3068,7 @@ def data_grid_end(Context ctx):
 def tree_cell(Context ctx, label, depth, has_children, icon, open=False):
     """Tree cell: indentation, a disclosure chevron and a label, for tree tables (use it in a table or grid cell). Returns true when *open toggled."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef bint pycui_result = cui_tree_cell(pycui_ctx, ctx._s(label), <int>depth, <uint8_t>bool(has_children), &pycui_out_open, ctx._s(icon))
     return (bool(pycui_result), bool(pycui_out_open))
 
@@ -3106,7 +3106,7 @@ def path_bar_menu_end(Context ctx):
 def file_picker(Context ctx, id, open=False, out='', *, title=None, save=False, folders=False, start=None, name=None, filter=None, filter_label=None, list=None, list_user=None):
     """True once, with the chosen path in out, when the dialog is confirmed; *open turns false then, or on Cancel and Esc."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef char *pycui_buf_out
     cdef size_t pycui_cap_out
     cdef cui_file_picker_opts opts
@@ -3851,7 +3851,7 @@ def tab_bar(Context ctx, id, items, selected=0, *, width=None, labels_on_selecte
 def control_tile(Context ctx, label, on=False, *, icon=None, detail=None, color=None, width=None, wide=False):
     """Wrap ``cui_control_tile_ex``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_on = <uint8_t>bool(on)
+    cdef c_bool pycui_out_on = <c_bool>bool(on)
     cdef cui_tile_opts opts
     memset(&opts, 0, sizeof(opts))
     if icon is not None:
@@ -4182,7 +4182,7 @@ def expandable_text(Context ctx, id, text, *, lines=None, size=None, color=None,
 def expandable_card_begin(Context ctx, title, open=False, *, description=None, icon=None, badge=None, badge_tone=None):
     """Wrap ``cui_expandable_card_begin``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef cui_expandable_card_opts opts
     memset(&opts, 0, sizeof(opts))
     if description is not None:
@@ -4220,7 +4220,7 @@ def toc_anchor(Context ctx, anchor):
 def banner(Context ctx, text, open=False, *, tone=None, icon=None, action=None, dismissible=False):
     """Wrap ``cui_banner_ex``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef cui_banner_opts opts
     memset(&opts, 0, sizeof(opts))
     if tone is not None:
@@ -4248,7 +4248,7 @@ def multi_select(Context ctx, id, items, selected=False, *, label=None, placehol
     cdef cui_ctx *pycui_ctx = ctx._ctx()
     cdef const char *const *pycui_ptr_items
     cdef int pycui_n_items
-    cdef uint8_t pycui_out_selected = <uint8_t>bool(selected)
+    cdef c_bool pycui_out_selected = <c_bool>bool(selected)
     cdef cui_multi_select_opts opts
     pycui_ptr_items = _s_array_any(ctx, items, &pycui_n_items)
     memset(&opts, 0, sizeof(opts))
@@ -4886,7 +4886,7 @@ def dockspace_end(Context ctx):
 def dock_panel_begin(Context ctx, title, open=False, *, icon=None, dirty=False):
     """Wrap ``cui_dock_panel_begin_ex``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef cui_dock_panel_opts opts
     memset(&opts, 0, sizeof(opts))
     if icon is not None:
@@ -4938,7 +4938,7 @@ def inspector_end(Context ctx):
 def inspector_group(Context ctx, title, open=False):
     """A folding group header. Build its rows only when this returns true (it stays true while the group animates closed). open may be NULL for a plain section that does not fold."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_open = <uint8_t>bool(open)
+    cdef c_bool pycui_out_open = <c_bool>bool(open)
     cdef bint pycui_result = cui_inspector_group(pycui_ctx, ctx._s(title), &pycui_out_open)
     return (bool(pycui_result), bool(pycui_out_open))
 
@@ -5023,7 +5023,7 @@ def prop_text(Context ctx, label, text='', *, min=None, max=None, step=None, for
 def prop_bool(Context ctx, label, value=False, *, min=None, max=None, step=None, format=None, suffix=None, placeholder=None, tooltip=None, disabled=False, checkbox=False):
     """Wrap ``cui_prop_bool_ex``."""
     cdef cui_ctx *pycui_ctx = ctx._ctx()
-    cdef uint8_t pycui_out_value = <uint8_t>bool(value)
+    cdef c_bool pycui_out_value = <c_bool>bool(value)
     cdef cui_prop_opts opts
     memset(&opts, 0, sizeof(opts))
     if min is not None:

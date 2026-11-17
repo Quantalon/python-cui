@@ -5,6 +5,10 @@
 
 from libc.stddef cimport size_t
 from libc.stdint cimport int64_t, uint8_t, uint32_t, uint64_t, uintptr_t
+# `c_bool` is C's `bool`: plain `uint8_t` is fine for bool fields and by-value
+# parameters (the C compiler converts implicitly), but a pointer has to name the
+# real type, or GCC 14 rejects it with `-Wincompatible-pointer-types`.
+from ._stdbool cimport bool as c_bool
 
 cdef extern from "cui/cui.h" nogil:
     ctypedef uintptr_t cui_texture
@@ -690,7 +694,7 @@ cdef extern from "cui/cui.h" nogil:
         const char * time
         int depth
         int * likes
-        uint8_t * liked
+        c_bool * liked
         uint8_t edited
         const char * badge
 
@@ -1221,7 +1225,7 @@ cdef extern from "cui/cui.h" nogil:
         cui_size width
         cui_size height
         float row_height
-        uint8_t * selected
+        c_bool * selected
         cui_table_sort * sort
         uint8_t striped
         int * cursor
@@ -2119,7 +2123,7 @@ cdef extern from "cui/cui.h" nogil:
         const char * label
         const char * tooltip
         const char * shortcut
-        uint8_t * toggle
+        c_bool * toggle
         uint8_t disabled
 
     ctypedef struct cui_toolbar_opts:
@@ -2404,14 +2408,14 @@ cdef extern from "cui/cui.h" nogil:
     uint8_t cui_button_ex(cui_ctx * ui, const char * label, const cui_button_opts * opts_)
     uint8_t cui_icon_button_ex(cui_ctx * ui, const char * icon, const cui_button_opts * opts_)
     uint8_t cui_segmented_ex(cui_ctx * ui, const char * id, const char *const * items, int count, int * index, const cui_segmented_opts * opts_)
-    uint8_t cui_checkbox_ex(cui_ctx * ui, const char * label, uint8_t * value, const cui_check_opts * opts_)
-    uint8_t cui_switch_ex(cui_ctx * ui, const char * label, uint8_t * value, const cui_check_opts * opts_)
+    uint8_t cui_checkbox_ex(cui_ctx * ui, const char * label, c_bool * value, const cui_check_opts * opts_)
+    uint8_t cui_switch_ex(cui_ctx * ui, const char * label, c_bool * value, const cui_check_opts * opts_)
     uint8_t cui_radio_ex(cui_ctx * ui, const char * label, int * value, int option, const cui_check_opts * opts_)
     uint8_t cui_radio_group(cui_ctx * ui, const char * id, const char *const * items, int count, int * index)
     uint8_t cui_slider_ex(cui_ctx * ui, const char * label, float * value, float min, float max, const cui_slider_opts * opts_)
     uint8_t cui_range_slider(cui_ctx * ui, const char * label, float * lo, float * hi, float min, float max)
     uint8_t cui_rating(cui_ctx * ui, const char * id, int * value, int max)
-    uint8_t cui_chip_ex(cui_ctx * ui, const char * label, uint8_t * selected, const cui_chip_opts * opts_)
+    uint8_t cui_chip_ex(cui_ctx * ui, const char * label, c_bool * selected, const cui_chip_opts * opts_)
     int cui_input_ex(cui_ctx * ui, const char * id, char * buf, size_t cap, const cui_input_opts * opts_)
     int cui_textarea_ex(cui_ctx * ui, const char * id, char * buf, size_t cap, const cui_input_opts * opts_)
     int cui_search_ex(cui_ctx * ui, const char * id, char * buf, size_t cap, const cui_input_opts * opts_)
@@ -2442,11 +2446,11 @@ cdef extern from "cui/cui.h" nogil:
     void cui_menu_separator(cui_ctx * ui)
     void cui_menu_label(cui_ctx * ui, const char * text)
     void cui_tooltip(cui_ctx * ui, const char * text)
-    uint8_t cui_dialog_begin(cui_ctx * ui, const char * title, uint8_t * open, const cui_dialog_opts * opts_)
+    uint8_t cui_dialog_begin(cui_ctx * ui, const char * title, c_bool * open, const cui_dialog_opts * opts_)
     void cui_dialog_end(cui_ctx * ui)
     void cui_dialog_footer_begin(cui_ctx * ui)
     void cui_dialog_footer_end(cui_ctx * ui)
-    uint8_t cui_sheet_begin(cui_ctx * ui, const char * title, uint8_t * open, const cui_sheet_opts * opts_)
+    uint8_t cui_sheet_begin(cui_ctx * ui, const char * title, c_bool * open, const cui_sheet_opts * opts_)
     void cui_sheet_end(cui_ctx * ui)
     int cui_toast_ex(cui_ctx * ui, const char * title, const cui_toast_opts * opts_)
     uint8_t cui_toast_action_clicked(cui_ctx * ui, int handle)
@@ -2461,9 +2465,9 @@ cdef extern from "cui/cui.h" nogil:
     uint8_t cui_empty_state_ex(cui_ctx * ui, const char * title, const cui_empty_opts * opts_)
     void cui_metric_ex(cui_ctx * ui, const char * label, const char * value, const cui_metric_opts * opts_)
     void cui_meter(cui_ctx * ui, const char * label, float used, float total, const char * unit)
-    uint8_t cui_accordion_begin(cui_ctx * ui, const char * title, uint8_t * open)
+    uint8_t cui_accordion_begin(cui_ctx * ui, const char * title, c_bool * open)
     void cui_accordion_end(cui_ctx * ui)
-    uint8_t cui_tree_begin(cui_ctx * ui, const char * label, uint8_t * open, const cui_tree_opts * opts_)
+    uint8_t cui_tree_begin(cui_ctx * ui, const char * label, c_bool * open, const cui_tree_opts * opts_)
     void cui_tree_end(cui_ctx * ui)
     uint8_t cui_tree_clicked(cui_ctx * ui)
     uint8_t cui_list_item_ex(cui_ctx * ui, const char * title, const cui_list_item_opts * opts_)
@@ -2485,7 +2489,7 @@ cdef extern from "cui/cui.h" nogil:
     void cui_image_ex(cui_ctx * ui, uintptr_t tex, const cui_image_opts * opts_)
     uint8_t cui_image_viewer_ex(cui_ctx * ui, const char * id, uintptr_t tex, int image_w, int image_h, cui_image_view * view, const cui_image_viewer_opts * opts_)
     uint8_t cui_cropper_ex(cui_ctx * ui, const char * id, uintptr_t tex, int image_w, int image_h, cui_rect * crop, const cui_cropper_opts * opts_)
-    int cui_command_palette(cui_ctx * ui, uint8_t * open, const cui_command * commands, int count)
+    int cui_command_palette(cui_ctx * ui, c_bool * open, const cui_command * commands, int count)
     uint8_t cui_radio_cards_ex(cui_ctx * ui, const char * id, const cui_choice * choices, int count, int * index, const cui_radio_cards_opts * opts_)
     uint8_t cui_tag_input_ex(cui_ctx * ui, const char * id, char * buf, size_t cap, const cui_tag_opts * opts_)
     uint8_t cui_otp_input(cui_ctx * ui, const char * id, char * code, int length)
@@ -2501,7 +2505,7 @@ cdef extern from "cui/cui.h" nogil:
     void cui_reorder_item_end(cui_ctx * ui)
     void cui_progress_ring(cui_ctx * ui, const char * label, float value, float size)
     int cui_split_button_ex(cui_ctx * ui, const char * label, const char *const * items, int count, const cui_split_button_opts * opts_)
-    uint8_t cui_toggle_group_ex(cui_ctx * ui, const char * id, const char *const * labels, int count, uint8_t * values, const cui_toggle_group_opts * opts_)
+    uint8_t cui_toggle_group_ex(cui_ctx * ui, const char * id, const char *const * labels, int count, c_bool * values, const cui_toggle_group_opts * opts_)
     uint8_t cui_confirm_button_ex(cui_ctx * ui, const char * label, const cui_confirm_opts * opts_)
     uint8_t cui_status_button_ex(cui_ctx * ui, const char * label, int status, const cui_status_button_opts * opts_)
     int cui_reactions(cui_ctx * ui, const char * id, cui_reaction * items, int count)
@@ -2519,7 +2523,7 @@ cdef extern from "cui/cui.h" nogil:
     uint8_t cui_data_grid_cell_edit(cui_ctx * ui, char * buf, size_t cap)
     uint8_t cui_data_grid_edit(cui_ctx * ui, char * buf, size_t cap)
     void cui_data_grid_end(cui_ctx * ui)
-    uint8_t cui_tree_cell(cui_ctx * ui, const char * label, int depth, uint8_t has_children, uint8_t * open, const char * icon)
+    uint8_t cui_tree_cell(cui_ctx * ui, const char * label, int depth, uint8_t has_children, c_bool * open, const char * icon)
     uint8_t cui_filter_bar(cui_ctx * ui, const char * id, const cui_filter_field * fields, int count, uint32_t * selected, char * search, size_t search_cap)
     void cui_tree_table_begin_ex(cui_ctx * ui, const char * id, const cui_grid_column * columns, int column_count, cui_tree_node * nodes, int node_count, const cui_tree_table_opts * opts_)
     int cui_tree_table_row(cui_ctx * ui)
@@ -2531,7 +2535,7 @@ cdef extern from "cui/cui.h" nogil:
     void cui_path_bar_menu_end(cui_ctx * ui)
     int cui_fs_list(void * user, const char * path, cui_file_entry * out, int cap, char * names, size_t names_cap, uint8_t hidden)
     cui_file_browser_result cui_file_browser_ex(cui_ctx * ui, const char * id, char * path, size_t path_cap, const cui_file_browser_opts * opts_)
-    uint8_t cui_file_picker_ex(cui_ctx * ui, const char * id, uint8_t * open, char * out, size_t out_cap, const cui_file_picker_opts * opts_)
+    uint8_t cui_file_picker_ex(cui_ctx * ui, const char * id, c_bool * open, char * out, size_t out_cap, const cui_file_picker_opts * opts_)
     void cui_code_block_ex(cui_ctx * ui, const char * id, const char * code, const cui_code_opts * opts_)
     uint8_t cui_json_view_ex(cui_ctx * ui, const char * id, const char * json, const cui_json_opts * opts_)
     cui_markdown_result cui_markdown_ex(cui_ctx * ui, const char * id, const char * text, const cui_markdown_opts * opts_)
@@ -2587,7 +2591,7 @@ cdef extern from "cui/cui.h" nogil:
     void cui_dock_separator(cui_ctx * ui)
     void cui_dock_end(cui_ctx * ui)
     uint8_t cui_tab_bar_ex(cui_ctx * ui, const char * id, const cui_tab_bar_item * items, int count, int * selected, const cui_tab_bar_opts * opts_)
-    uint8_t cui_control_tile_ex(cui_ctx * ui, const char * label, uint8_t * on, const cui_tile_opts * opts_)
+    uint8_t cui_control_tile_ex(cui_ctx * ui, const char * label, c_bool * on, const cui_tile_opts * opts_)
     uint8_t cui_waveform_ex(cui_ctx * ui, const char * id, const float * peaks, int count, float * progress, const cui_waveform_opts * opts_)
     int cui_now_playing_ex(cui_ctx * ui, const char * id, cui_now_playing * np, const cui_now_playing_opts * opts_)
     uint8_t cui_reasoning_begin(cui_ctx * ui, const char * id, const cui_reasoning_opts * opts_)
@@ -2616,14 +2620,14 @@ cdef extern from "cui/cui.h" nogil:
     void cui_hover_card_end(cui_ctx * ui)
     uint8_t cui_confirm_popover_ex(cui_ctx * ui, const char * id, const cui_confirm_popover_opts * opts_)
     uint8_t cui_expandable_text_ex(cui_ctx * ui, const char * id, const char * text, const cui_expandable_text_opts * opts_)
-    uint8_t cui_expandable_card_begin(cui_ctx * ui, const char * title, uint8_t * open, const cui_expandable_card_opts * opts_)
+    uint8_t cui_expandable_card_begin(cui_ctx * ui, const char * title, c_bool * open, const cui_expandable_card_opts * opts_)
     void cui_expandable_card_end(cui_ctx * ui)
     int cui_toc(cui_ctx * ui, const char * scroll_id, const cui_toc_item * items, int count)
     void cui_toc_anchor(cui_ctx * ui, const char * anchor)
-    uint8_t cui_banner_ex(cui_ctx * ui, const char * text, uint8_t * open, const cui_banner_opts * opts_)
+    uint8_t cui_banner_ex(cui_ctx * ui, const char * text, c_bool * open, const cui_banner_opts * opts_)
     void cui_countdown_ex(cui_ctx * ui, const char * id, double seconds_left, const cui_countdown_opts * opts_)
     int cui_checklist_ex(cui_ctx * ui, const char * id, cui_check_step * steps, int count, const cui_checklist_opts * opts_)
-    uint8_t cui_multi_select_ex(cui_ctx * ui, const char * id, const char *const * items, int count, uint8_t * selected, const cui_multi_select_opts * opts_)
+    uint8_t cui_multi_select_ex(cui_ctx * ui, const char * id, const char *const * items, int count, c_bool * selected, const cui_multi_select_opts * opts_)
     uint8_t cui_range_calendar(cui_ctx * ui, const char * id, cui_date_range * range, int months)
     uint8_t cui_date_range_picker_ex(cui_ctx * ui, const char * id, cui_date_range * range, const cui_date_range_opts * opts_)
     int cui_date_to_days(cui_date d)
@@ -2678,17 +2682,17 @@ cdef extern from "cui/cui.h" nogil:
     cui_doc_tabs_result cui_doc_tabs_ex(cui_ctx * ui, const char * id, const cui_doc_tab * tabs, int count, int * selected, const cui_doc_tabs_opts * opts_)
     void cui_dockspace_begin_ex(cui_ctx * ui, const char * id, const cui_dockspace_opts * opts_)
     void cui_dockspace_end(cui_ctx * ui)
-    uint8_t cui_dock_panel_begin_ex(cui_ctx * ui, const char * title, uint8_t * open, const cui_dock_panel_opts * opts_)
+    uint8_t cui_dock_panel_begin_ex(cui_ctx * ui, const char * title, c_bool * open, const cui_dock_panel_opts * opts_)
     void cui_dock_panel_end(cui_ctx * ui)
     size_t cui_dock_save(cui_ctx * ui, const char * id, char * buf, size_t cap)
     uint8_t cui_dock_load(cui_ctx * ui, const char * id, const char * text)
     uint8_t cui_inspector_begin_ex(cui_ctx * ui, const char * id, const cui_inspector_opts * opts_)
     void cui_inspector_end(cui_ctx * ui)
-    uint8_t cui_inspector_group(cui_ctx * ui, const char * title, uint8_t * open)
+    uint8_t cui_inspector_group(cui_ctx * ui, const char * title, c_bool * open)
     uint8_t cui_prop_float_ex(cui_ctx * ui, const char * label, float * value, const cui_prop_opts * opts_)
     uint8_t cui_prop_int_ex(cui_ctx * ui, const char * label, int * value, const cui_prop_opts * opts_)
     uint8_t cui_prop_text_ex(cui_ctx * ui, const char * label, char * buf, size_t cap, const cui_prop_opts * opts_)
-    uint8_t cui_prop_bool_ex(cui_ctx * ui, const char * label, uint8_t * value, const cui_prop_opts * opts_)
+    uint8_t cui_prop_bool_ex(cui_ctx * ui, const char * label, c_bool * value, const cui_prop_opts * opts_)
     uint8_t cui_prop_enum_ex(cui_ctx * ui, const char * label, const char *const * items, int count, int * index, const cui_prop_opts * opts_)
     uint8_t cui_prop_color_ex(cui_ctx * ui, const char * label, cui_color * value, const cui_prop_opts * opts_)
     uint8_t cui_prop_vec_ex(cui_ctx * ui, const char * label, float * value, int components, const cui_prop_opts * opts_)

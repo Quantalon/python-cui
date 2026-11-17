@@ -350,8 +350,11 @@ def cy(ctype: str) -> str:
         return "const char *const *"
     match = re.match(r"^(?P<base>.+?)(?P<stars>\*+)$", ctype)
     if match:
-        base = _cy_base(match.group("base").strip())
-        return base + " " + "*" * len(match.group("stars"))
+        base = match.group("base").strip()
+        stars = " " + "*" * len(match.group("stars"))
+        if base.removeprefix("const ").strip() in BOOL_CTYPES:
+            return "c_bool" + stars
+        return _cy_base(base) + stars
     return _cy_base(ctype)
 
 
@@ -599,6 +602,10 @@ DECL_HEADER = '''\
 
 from libc.stddef cimport size_t
 from libc.stdint cimport int64_t, uint8_t, uint32_t, uint64_t, uintptr_t
+# `c_bool` is C's `bool`: plain `uint8_t` is fine for bool fields and by-value
+# parameters (the C compiler converts implicitly), but a pointer has to name the
+# real type, or GCC 14 rejects it with `-Wincompatible-pointer-types`.
+from ._stdbool cimport bool as c_bool
 
 cdef extern from "cui/cui.h" nogil:
     ctypedef uintptr_t cui_texture
@@ -1225,7 +1232,7 @@ def emit_function(func: Func, specs: list[Spec], retkind: str, model: Model) -> 
                 detail = spec.detail
                 if detail == "bool":
                     optional.append(f"{spec.name}=False")
-                    cdefs.append(f"    cdef uint8_t {local} = <uint8_t>bool({spec.name})")
+                    cdefs.append(f"    cdef c_bool {local} = <c_bool>bool({spec.name})")
                     outs.append(f"bool({local})")
                 elif detail in ("float", "double"):
                     optional.append(f"{spec.name}=0.0")
